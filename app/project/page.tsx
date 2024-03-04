@@ -4,36 +4,105 @@ import React, { useState, useEffect } from 'react';
 import axios, { AxiosResponse } from 'axios';
 import Popup from '../../components/Popup';
 import DynamicInputsForm from '@/components/InputsList';
+import TreeChart from  '../../components/TreeChart';
+
+interface OpenAiEvents {
+  content: string;
+  winEvent: string;
+  loseEvent: string;
+}
+
+interface Event {
+  data: string;
+  winEvent?: Event;
+  loseEvent?: Event;
+}
+
+interface Child {
+  name: string;
+  value: number;
+  children?: Child[];
+}
 
 const Home: React.FC = () => {
-  const [isPopupOpen, setPopupOpen] = useState(true);
+  const [isPopupOpen, setPopupOpen] = useState(false);
   const [response, setResponse] = useState<string>('');
   const [visibleInputs, setVisibleInputs] = useState(false);
   const [inputs, setInputs] = useState<string[]>([""]);
+  let initialEvents = new Array<Event>();
+
+
+  const initialDataTree: Child[] = [
+    {
+      name: 'Parent',
+      value: 100,
+      children: []
+    }
+  ];
+
+  
+  const [dataTree, setDataTree] = useState(initialDataTree);
+
+  // const dataTree :Child[] = [
+  //   {
+  //     name: 'Parent',
+  //     value: 100,
+  //     children:[
+  //       // { name: 'Child 1', value: 50 },
+  //       // { name: 'Child 2', value: 30 },
+  //       // { name: 'Child 3', value: 20 },
+  //     ],
+  //   },
+  // ];
+
+  useEffect(() => {
+    console.log("useEffect");
+    setPopupOpen(true);
+  }, [])
+
+
+  function convertEventsToChildren(events: Event[]): Child[] {
+    const totalValue = events.length;
+    const childValue = totalValue > 0 ? 100 / totalValue : 0;
+  
+    return events.map(event => {
+      const child: Child = {
+        name: event.data,
+        value: childValue
+      };
+  
+      if (event.winEvent || event.loseEvent) {
+        const childEvents: Event[] = [];
+        if (event.winEvent) childEvents.push(event.winEvent);
+        if (event.loseEvent) childEvents.push(event.loseEvent);
+        child.children = convertEventsToChildren(childEvents);
+      }
+  
+      return child;
+    });
+  }
 
   const setRequestDafault = () => {
     const fetchData = async () => {
       try {
-        const apiKey = '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';
+        const apiKey = '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';
         const requestBody = {
           model: 'gpt-3.5-turbo',
           messages: [
             {
               role: 'user',
-              content: `Представь, что ты проектировщик атомной электростанции. Назови 6 начальных рисковых событий, а также систему, которая решит это рисковое событие. А также добавь исход положительный и отрицательный от применения этой функции. Ответ дай в формате json. [
-                {
-                      content:"Здесь инфо о начальном событии",
-                      system: "Тут описание системы, которая решает начальное событие",
-                      winEvent: "Тут событие положительное после применение системы",
-                      loseEvent: "Тут событие, если система не помогла"
+              content: `Представь, что ты проектировщик атомной электростанции. Назови 6 начальных рисковых событий, а также построй два варианта событий  от начального - положительный и отрицательный. Ответ дай в формате json. [
+                      {
+                        "content": "Здесь инфо о начальном событии",
+                        "winEvent": "Тут событие положительное событие",
+                        "loseEvent": "Тут негативное событие"
                       },
                       {
-                        content:"Здесь инфо о начальном событии",
-                        system: "Тут описание системы, которая решает начальное событие",
-                        winEvent: "Тут событие положительное после применение системы",
-                        loseEvent: "Тут событие, если система не помогла"
-                        },
-                        ...
+                        "content": "Здесь инфо о начальном событии",
+                        "winEvent": "Тут событие положительное событие",
+                        "loseEvent": "Тут негативное событие"
+                      }, и т.д.
+                      
                     ]`, 
             },
           ],
@@ -50,7 +119,33 @@ const Home: React.FC = () => {
           }
         );
 
+        let data: OpenAiEvents[] = JSON.parse(response.data.choices[0].message.content);
+
+        console.log(data);
+
+        // Проверяем, что data не пустой и не undefined
+        if (data && data.length > 0) {
+            data.forEach((element: OpenAiEvents) => {
+                // Добавляем новый элемент в массив initialEvents
+                initialEvents.push({
+                    data: element.content,
+                    winEvent: {
+                        data: element.winEvent,
+                        winEvent: undefined,
+                        loseEvent: undefined
+                    },
+                    loseEvent: {
+                        data: element.loseEvent,
+                        winEvent: undefined,
+                        loseEvent: undefined
+                    }
+                });
+            });
+        }
+
+        
         setResponse(response.data.choices[0].message.content);
+        console.log(initialEvents);
       } catch (error) {
         console.error('Error fetching response from API:', error);
       }
@@ -63,26 +158,24 @@ const Home: React.FC = () => {
     console.log(inputs);
     const fetchData = async () => {
       try {
-        const apiKey = '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';
+        const apiKey = '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';
         const requestBody = {
           model: 'gpt-3.5-turbo',
           messages: [
             {
               role: 'user',
-              content: `Представь, что ты проектировщик атомной электростанции. Вот начальные события: ${inputs} Используй эти начальные рисковые события, а также систему, которая решит соответствующее рисковое событие. А также добавь исход положительный и отрицательный от применения этой системы. Ответ дай в формате json. [
-                {
-                      content:"Здесь вставляешь то событие, которое я тебе дал из массива",
-                      system: "Тут описание системы, которая решает это начальное событие",
-                      winEvent: "Тут событие положительное после применение системы",
-                      loseEvent: "Тут событие, если система не помогла"
+              content: `Представь, что ты проектировщик атомной электростанции. Вот начальные события: ${inputs} Используй эти начальные рисковые события, построй два варианта событий от начального - положительный и отрицательный. Ответ дай в формате json. [
+                      {
+                        "content": "Здесь вставляешь то событие, которое я тебе дал из массива",                      
+                        "winEvent": "Тут событие положительное после применение системы",
+                        "loseEvent": "Тут событие, если система не помогла"
                       },
                       {
-                        content:"Здесь вставляешь то событие, которое я тебе дал из массива",
-                        system: "Тут описание системы, которая решает это начальное событие",
-                        winEvent: "Тут событие положительное после применение системы",
-                        loseEvent: "Тут событие, если система не помогла"
-                        },
-                        ...
+                        "content": "Здесь вставляешь то событие, которое я тебе дал из массива",                     
+                        "winEvent": "Тут событие положительное после применение системы",
+                        "loseEvent": "Тут событие, если система не помогла"
+                      }, и т.д.
+                         
                     ]`, 
             },
           ],
@@ -98,7 +191,52 @@ const Home: React.FC = () => {
             },
           }
         );
+
+        console.log(response.data.choices[0].message.content);
+
+        let data: OpenAiEvents[] = JSON.parse(response.data.choices[0].message.content);
+
+        console.log(data);
+
+        // Проверяем, что data не пустой и не undefined
+        if (data && data.length > 0) {
+            data.forEach((element: OpenAiEvents) => {
+                // Добавляем новый элемент в массив initialEvents
+                initialEvents.push({
+                    data: element.content,
+                    winEvent: {
+                        data: element.winEvent,
+                        winEvent: undefined,
+                        loseEvent: undefined
+                    },
+                    loseEvent: {
+                        data: element.loseEvent,
+                        winEvent: undefined,
+                        loseEvent: undefined
+                    }
+                });
+            });
+        }
+
+        
         setResponse(response.data.choices[0].message.content);
+        console.log(initialEvents);
+        const children: Child[] = convertEventsToChildren(initialEvents);
+
+        // Проверяем, определен ли уже массив children в dataTree[0]
+        if (dataTree[0].children) {
+          // Если массив children уже определен, добавляем новые дочерние элементы к нему
+          dataTree[0].children = [...dataTree[0].children, ...children];
+        } else {
+          // Если массив children еще не определен, просто присваиваем ему новый массив
+          dataTree[0].children = children;
+        }
+
+        // Обновляем состояние dataTree
+        setDataTree([...dataTree]);
+
+        console.log(dataTree[0].children);
+
       } catch (error) {
         console.error('Error fetching response from API:', error);
       }
@@ -110,7 +248,6 @@ const Home: React.FC = () => {
   const handleSubmit = (inputs: string[]) => {
     // Обработка логики отправки данных, например, отправка на сервер
 
-    
     setHandleRequest(inputs);
     setInputs(inputs);
     console.log('Отправлены следующие инпуты:', inputs);
@@ -118,12 +255,12 @@ const Home: React.FC = () => {
 
   const handleClosePopup = () => {
     setPopupOpen(false);
-    setRequestDafault();
+    // setRequestDafault();
   };
 
   const handleConfirmPopup = () => {
     // Добавьте логику для подтверждения
-    handleClosePopup();
+    setPopupOpen(false);
     setVisibleInputs(true);
   };
 
@@ -146,7 +283,13 @@ const Home: React.FC = () => {
               {visibleInputs && <DynamicInputsForm onSubmit={handleSubmit} />}              
               {response && <div>{response}</div>}
             </div>
+
+            <div>
+              <h1>Tree Chart Example</h1>
+              <TreeChart />
+            </div>
         </div>
+        
     </main>
   );
 };
