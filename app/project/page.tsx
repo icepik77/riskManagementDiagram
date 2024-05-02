@@ -5,6 +5,9 @@ import axios, { AxiosResponse } from 'axios';
 import Popup from '../../components/Popup';
 import DynamicInputsForm from '@/components/InputsList';
 import TreeChart from  '../../components/TreeChart';
+import Event from '@/types/Event';
+import EventTreeElement from '@/types/EventTree';
+import API_KEY from '@/config/config';
 
 interface OpenAiEvents {
   content: string;
@@ -12,34 +15,26 @@ interface OpenAiEvents {
   loseEvent: string;
 }
 
-interface Event {
-  data: string;
-  winEvent?: Event;
-  loseEvent?: Event;
-}
-
-interface Child {
-  name: string;
-  value: number;
-  children?: Child[];
-}
 
 const Home: React.FC = () => {
   const [isPopupOpen, setPopupOpen] = useState(false);
   const [response, setResponse] = useState<string>('');
   const [visibleInputs, setVisibleInputs] = useState(false);
   const [inputs, setInputs] = useState<string[]>([""]);
+  const [eventTreeElements, setEventTreeElements] = useState<EventTreeElement[]>();
+  
+
+  //Хранение сгененрированных событий в результате запроса
   let initialEvents = new Array<Event>();
+  // let eventTreeElements = new Array<EventTreeElement>();
 
-
-  const initialDataTree: Child[] = [
+  const initialDataTree: EventTreeElement[] = [
     {
       name: 'Parent',
       value: 100,
       children: []
     }
   ];
-
   
   const [dataTree, setDataTree] = useState(initialDataTree);
 
@@ -61,12 +56,12 @@ const Home: React.FC = () => {
   }, [])
 
 
-  function convertEventsToChildren(events: Event[]): Child[] {
+  function convertEventsToChildren(events: Event[]): EventTreeElement[] {
     const totalValue = events.length;
     const childValue = totalValue > 0 ? 100 / totalValue : 0;
   
     return events.map(event => {
-      const child: Child = {
+      const child: EventTreeElement = {
         name: event.data,
         value: childValue
       };
@@ -85,13 +80,15 @@ const Home: React.FC = () => {
   const setRequestDafault = () => {
     const fetchData = async () => {
       try {
-        const apiKey = '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';
+        const apiKey = API_KEY;
         const requestBody = {
           model: 'gpt-3.5-turbo',
           messages: [
             {
               role: 'user',
-              content: `Представь, что ты проектировщик атомной электростанции. Назови 6 начальных рисковых событий, а также построй два варианта событий  от начального - положительный и отрицательный. Ответ дай в формате json. [
+              content: `Представь, что ты руководитель разработки приложения для доставки продуктов. 
+                        
+                        Назови 6 начальных рисковых событий, а также построй два варианта событий  от начального - положительный и отрицательный. Ответ дай в формате json. [
                       {
                         "content": "Здесь инфо о начальном событии",
                         "winEvent": "Тут событие положительное событие",
@@ -158,7 +155,7 @@ const Home: React.FC = () => {
     console.log(inputs);
     const fetchData = async () => {
       try {
-        const apiKey = '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';
+        const apiKey = API_KEY;
         const requestBody = {
           model: 'gpt-3.5-turbo',
           messages: [
@@ -221,21 +218,22 @@ const Home: React.FC = () => {
         
         setResponse(response.data.choices[0].message.content);
         console.log(initialEvents);
-        const children: Child[] = convertEventsToChildren(initialEvents);
+        setEventTreeElements(convertEventsToChildren(initialEvents));
+        // const eventTreeElements: EventTreeElement[] = convertEventsToChildren(initialEvents);
 
-        // Проверяем, определен ли уже массив children в dataTree[0]
-        if (dataTree[0].children) {
-          // Если массив children уже определен, добавляем новые дочерние элементы к нему
-          dataTree[0].children = [...dataTree[0].children, ...children];
-        } else {
-          // Если массив children еще не определен, просто присваиваем ему новый массив
-          dataTree[0].children = children;
-        }
+        // // Проверяем, определен ли уже массив children в dataTree[0]
+        // if (dataTree[0].children) {
+        //   // Если массив children уже определен, добавляем новые дочерние элементы к нему
+        //   dataTree[0].children = [...dataTree[0].children, ...eventTreeElements];
+        // } else {
+        //   // Если массив children еще не определен, просто присваиваем ему новый массив
+        //   dataTree[0].children = eventTreeElements;
+        // }
 
-        // Обновляем состояние dataTree
-        setDataTree([...dataTree]);
+        // // Обновляем состояние dataTree
+        // setDataTree([...dataTree]);
 
-        console.log(dataTree[0].children);
+        // console.log(dataTree[0].children);
 
       } catch (error) {
         console.error('Error fetching response from API:', error);
@@ -284,10 +282,10 @@ const Home: React.FC = () => {
               {response && <div>{response}</div>}
             </div>
 
-            <div>
+            {eventTreeElements && <div>
               <h1>Tree Chart Example</h1>
-              <TreeChart />
-            </div>
+              <TreeChart eventTreeElements={eventTreeElements}/>
+            </div>}
         </div>
         
     </main>
