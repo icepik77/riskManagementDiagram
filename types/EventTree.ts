@@ -1,6 +1,5 @@
 interface EventTreeElement {
-    name: string;
-    value?: number;
+    title: string;
     children?: EventTreeElement[];
 }
 

@@ -1,5 +1,5 @@
 interface Event {
-    data: string;
+    title: string;
     winEvent?: Event;
     loseEvent?: Event;
   }

@@ -1,5 +1,6 @@
 // pages/index.tsx
 'use client'
+
 import React, { useState, useEffect } from 'react';
 import axios, { AxiosResponse } from 'axios';
 import Popup from '../../components/Popup';
@@ -8,6 +9,8 @@ import TreeChart from  '../../components/TreeChart';
 import Event from '@/types/Event';
 import EventTreeElement from '@/types/EventTree';
 import API_KEY from '@/config/config';
+import Tree from '../ui/Tree';
+import DialogForm from '../ui/DialogForm';
 
 interface OpenAiEvents {
   content: string;
@@ -19,9 +22,11 @@ interface OpenAiEvents {
 const Home: React.FC = () => {
   const [isPopupOpen, setPopupOpen] = useState(false);
   const [response, setResponse] = useState<string>('');
-  const [visibleInputs, setVisibleInputs] = useState(false);
+  const [visibleInputs, setVisibleInputs] = useState(true);
   const [inputs, setInputs] = useState<string[]>([""]);
   const [eventTreeElements, setEventTreeElements] = useState<EventTreeElement[]>();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [context, setContext] = useState('');
   
 
   //Хранение сгененрированных событий в результате запроса
@@ -30,40 +35,31 @@ const Home: React.FC = () => {
 
   const initialDataTree: EventTreeElement[] = [
     {
-      name: 'Parent',
-      value: 100,
+      title: 'Parent',
       children: []
     }
   ];
   
   const [dataTree, setDataTree] = useState(initialDataTree);
 
-  // const dataTree :Child[] = [
-  //   {
-  //     name: 'Parent',
-  //     value: 100,
-  //     children:[
-  //       // { name: 'Child 1', value: 50 },
-  //       // { name: 'Child 2', value: 30 },
-  //       // { name: 'Child 3', value: 20 },
-  //     ],
-  //   },
-  // ];
 
   useEffect(() => {
     console.log("useEffect");
-    setPopupOpen(true);
+    setIsDialogOpen(true);
   }, [])
+
+  // useEffect(() =>{
+  //   console.log("eventTreeElements: " + eventTreeElements);
+  // }, [])
 
 
   function convertEventsToChildren(events: Event[]): EventTreeElement[] {
     const totalValue = events.length;
-    const childValue = totalValue > 0 ? 100 / totalValue : 0;
+  
   
     return events.map(event => {
       const child: EventTreeElement = {
-        name: event.data,
-        value: childValue
+        title: event.title,
       };
   
       if (event.winEvent || event.loseEvent) {
@@ -125,14 +121,14 @@ const Home: React.FC = () => {
             data.forEach((element: OpenAiEvents) => {
                 // Добавляем новый элемент в массив initialEvents
                 initialEvents.push({
-                    data: element.content,
+                    title: element.content,
                     winEvent: {
-                        data: element.winEvent,
+                        title: element.winEvent,
                         winEvent: undefined,
                         loseEvent: undefined
                     },
                     loseEvent: {
-                        data: element.loseEvent,
+                        title: element.loseEvent,
                         winEvent: undefined,
                         loseEvent: undefined
                     }
@@ -161,79 +157,44 @@ const Home: React.FC = () => {
           messages: [
             {
               role: 'user',
-              content: `Представь, что ты проектировщик атомной электростанции. Вот начальные события: ${inputs} Используй эти начальные рисковые события, построй два варианта событий от начального - положительный и отрицательный. Ответ дай в формате json. [
-                      {
-                        "content": "Здесь вставляешь то событие, которое я тебе дал из массива",                      
-                        "winEvent": "Тут событие положительное после применение системы",
-                        "loseEvent": "Тут событие, если система не помогла"
-                      },
-                      {
-                        "content": "Здесь вставляешь то событие, которое я тебе дал из массива",                     
-                        "winEvent": "Тут событие положительное после применение системы",
-                        "loseEvent": "Тут событие, если система не помогла"
-                      }, и т.д.
-                         
-                    ]`, 
+              content: `
+              Необходимо провести Event tree analysis. Вот контекст задачи: ${context}
+              Вот начальные события: ${inputs} Используй эти начальные рисковые события, построй два варианта событий от начального - положительный и отрицательный. События должны состоять из двух слов. Продолжай вести дерево до полного отказа системы или полной нормализации состояния.  Ответ дай в формате json EventTreeElement[]. 
+              interface EventTreeElement {
+                title: string;
+                children?: EventTreeElement[];
+              }
+              `, 
             },
           ],
         };
 
-        const response: AxiosResponse<any> = await axios.post(
-          'https://api.openai.com/v1/chat/completions',
-          requestBody,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`,
-            },
-          }
-        );
+        console.log(requestBody.messages[0].content);
 
-        console.log(response.data.choices[0].message.content);
-
-        let data: OpenAiEvents[] = JSON.parse(response.data.choices[0].message.content);
-
-        console.log(data);
-
-        // Проверяем, что data не пустой и не undefined
-        if (data && data.length > 0) {
-            data.forEach((element: OpenAiEvents) => {
-                // Добавляем новый элемент в массив initialEvents
-                initialEvents.push({
-                    data: element.content,
-                    winEvent: {
-                        data: element.winEvent,
-                        winEvent: undefined,
-                        loseEvent: undefined
-                    },
-                    loseEvent: {
-                        data: element.loseEvent,
-                        winEvent: undefined,
-                        loseEvent: undefined
-                    }
-                });
-            });
+      const response: AxiosResponse<any> = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        requestBody,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
         }
+      );
 
-        
-        setResponse(response.data.choices[0].message.content);
-        console.log(initialEvents);
-        setEventTreeElements(convertEventsToChildren(initialEvents));
-        // const eventTreeElements: EventTreeElement[] = convertEventsToChildren(initialEvents);
+      console.log(response.data.choices[0].message.content);
 
-        // // Проверяем, определен ли уже массив children в dataTree[0]
-        // if (dataTree[0].children) {
-        //   // Если массив children уже определен, добавляем новые дочерние элементы к нему
-        //   dataTree[0].children = [...dataTree[0].children, ...eventTreeElements];
-        // } else {
-        //   // Если массив children еще не определен, просто присваиваем ему новый массив
-        //   dataTree[0].children = eventTreeElements;
-        // }
+      let data: EventTreeElement[] = JSON.parse(response.data.choices[0].message.content);
 
-        // // Обновляем состояние dataTree
-        // setDataTree([...dataTree]);
+      console.log(data);
 
-        // console.log(dataTree[0].children);
+      setEventTreeElements(data);
+      console.log(initialEvents);
+
+      // Обновляем состояние dataTree
+      setDataTree([...dataTree]);
+
+      console.log(dataTree[0].children);
 
       } catch (error) {
         console.error('Error fetching response from API:', error);
@@ -245,7 +206,6 @@ const Home: React.FC = () => {
 
   const handleSubmit = (inputs: string[]) => {
     // Обработка логики отправки данных, например, отправка на сервер
-
     setHandleRequest(inputs);
     setInputs(inputs);
     console.log('Отправлены следующие инпуты:', inputs);
@@ -262,32 +222,44 @@ const Home: React.FC = () => {
     setVisibleInputs(true);
   };
 
+  const handleOpenDialog = () => {
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+  };
+
+  const handleSubmitContext = (context: string) => {
+    console.log("Submitted context:", context);
+    setContext(context);
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-        <div>
-            {/* <h1 className="text-2xl font-semibold mb-4">Next.js Popup Example</h1> */}
-            {/* <button onClick={handleOpenPopup}>Открыть Popup</button> */}
-
-            {(
-                <Popup
-                  title="Создать начальные события вручную?"
-                  onClose={handleClosePopup}
-                  onConfirm={handleConfirmPopup}
-                  isOpen = {isPopupOpen}
-                />
-            )}
-            <div>
-              <h1 className="text-2xl font-semibold mb-4">Начальные события</h1>
-              {visibleInputs && <DynamicInputsForm onSubmit={handleSubmit} />}              
-              {response && <div>{response}</div>}
-            </div>
-
-            {eventTreeElements && <div>
-              <h1>Tree Chart Example</h1>
-              <TreeChart eventTreeElements={eventTreeElements}/>
-            </div>}
-        </div>
-        
+    <main className="flex min-h-screen flex-col p-24 relative">
+      {(
+          <Popup
+            title="Создать начальные события вручную?"
+            onClose={handleClosePopup}
+            onConfirm={handleConfirmPopup}
+            isOpen = {isPopupOpen}
+          />
+      )}
+      <div>
+        <h1 className="text-2xl font-semibold mb-4">Начальные события</h1>
+        {visibleInputs && <DynamicInputsForm onSubmit={handleSubmit} />}              
+        {response && <div>{response}</div>}
+      </div>
+      {eventTreeElements && <div>
+        <h1>Tree Chart Example</h1>
+        {eventTreeElements && <Tree eventTreeElements={eventTreeElements}/>}
+      </div>}
+      <div className='absolute bottom-[10%] right-[3%]'>
+        <button onClick={handleOpenDialog} type="submit" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-blue-600">
+          Контекст
+        </button>
+      </div>
+      <DialogForm isOpen={isDialogOpen} onClose={handleCloseDialog} onSubmit={handleSubmitContext} contextProp={context} />
     </main>
   );
 };
