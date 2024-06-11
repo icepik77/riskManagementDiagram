@@ -1,6 +1,6 @@
 import React from 'react';
 import { BsTrash } from 'react-icons/bs';
-import { AiOutlinePlus } from 'react-icons/ai';
+import { AiOutlinePlus, AiOutlineClose } from 'react-icons/ai';
 
 interface Project {
   id: number;
@@ -12,19 +12,31 @@ interface ProjectSidebarProps {
   onSelectProject: (projectId: number) => void;
   onAddProject: () => void;
   onDeleteProject: (projectId: number) => void;
+  onCloseSidebar: () => void;
 }
 
-const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ projects, onSelectProject, onAddProject, onDeleteProject }) => {
+const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
+  projects,
+  onSelectProject,
+  onAddProject,
+  onDeleteProject,
+  onCloseSidebar,
+}) => {
   return (
-    <div className="w-full sm:w-1/4 bg-gray-800 text-white h-screen p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 sm:static sm:inset-auto w-3/4 sm:w-1/4 bg-gray-800 text-white h-screen p-4 overflow-y-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl">Projects</h2>
-        <button onClick={onAddProject} className="text-2xl text-green-500">
-          <AiOutlinePlus />
-        </button>
+        <div className="flex space-x-2">
+          <button onClick={onAddProject} className="text-2xl text-green-500">
+            <AiOutlinePlus />
+          </button>
+          <button onClick={onCloseSidebar} className="text-2xl text-red-500 sm:hidden">
+            <AiOutlineClose />
+          </button>
+        </div>
       </div>
       <ul>
-        {projects.map(project => (
+        {projects.map((project) => (
           <li
             key={project.id}
             className="flex items-center justify-between cursor-pointer hover:bg-gray-600 p-2 rounded mb-2"
@@ -46,42 +58,3 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({ projects, onSelectProje
 };
 
 export default ProjectSidebar;
-
-
-
-
-
-
-// import React from 'react';
-
-// interface Project {
-//   id: number;
-//   name: string;
-// }
-
-// const projects: Project[] = [
-//   { id: 1, name: 'Project 1' },
-//   { id: 2, name: 'Project 2' },
-//   { id: 3, name: 'Project 3' },
-// ];
-
-// const ProjectSidebar: React.FC = () => {
-//   return (
-//     <div className="h-screen bg-purple-600 max-w-[256px] flex flex-row ">
-//       <div className="flex flex-col w-64 text-white">
-//         <div className="p-4">
-//           <h2 className="text-xl font-semibold">Проекты</h2>
-//         </div>
-//         <ul>
-//           {projects.map(project => (
-//             <li key={project.id} className="p-4 hover:bg-gray-700 cursor-pointer">
-//               {project.name}
-//             </li>
-//           ))}
-//         </ul>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default ProjectSidebar;

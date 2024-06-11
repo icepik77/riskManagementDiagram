@@ -1,4 +1,3 @@
-// data/projectsData.ts
 
 import EventTreeElement from "@/types/EventTree";
   
@@ -38,7 +37,6 @@ import EventTreeElement from "@/types/EventTree";
         },
       ],
     },
-    // Добавьте другие проекты по необходимости
   ];
   
   export default projectsData;

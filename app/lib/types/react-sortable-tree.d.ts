@@ -15,4 +15,4 @@ declare module 'react-sortable-tree' {
     const SortableTree: ComponentType<SortableTreeProps>;
   
     export default SortableTree;
-  }
+}

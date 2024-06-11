@@ -22,17 +22,20 @@ const MainLayout: React.FC = () => {
 
   const handleSelectProject = (projectId: number) => {
     setSelectedProjectId(projectId);
+    if (window.innerWidth < 640) {
+      setIsSidebarVisible(false);
+    }
   };
 
   const handleUpdateProjectContext = (projectId: number, newContext: string) => {
-    const updatedProjects = projects.map(project =>
+    const updatedProjects = projects.map((project) =>
       project.id === projectId ? { ...project, context: newContext } : project
     );
     setProjects(updatedProjects);
   };
 
   const handleUpdateProjectTreeEvents = (projectId: number, newTreeEvents: EventTreeElement[]) => {
-    const updatedProjects = projects.map(project =>
+    const updatedProjects = projects.map((project) =>
       project.id === projectId ? { ...project, eventTreeElements: newTreeEvents } : project
     );
     setProjects(updatedProjects);
@@ -49,7 +52,7 @@ const MainLayout: React.FC = () => {
   };
 
   const handleDeleteProject = (projectId: number) => {
-    const updatedProjects = projects.filter(project => project.id !== projectId);
+    const updatedProjects = projects.filter((project) => project.id !== projectId);
     setProjects(updatedProjects);
   };
 
@@ -57,7 +60,7 @@ const MainLayout: React.FC = () => {
     setIsSidebarVisible(!isSidebarVisible);
   };
 
-  const selectedProject = projects.find(project => project.id === selectedProjectId);
+  const selectedProject = projects.find((project) => project.id === selectedProjectId);
 
   return (
     <div className="flex flex-col h-screen">
@@ -65,18 +68,17 @@ const MainLayout: React.FC = () => {
         <button onClick={toggleSidebar} className="text-2xl mr-4">
           <AiOutlineMenu />
         </button>
-        <h1 className="text-xl">Project Manager</h1>
+        <h1 className="text-xl">Диаграмма анализа событий API chatGPT</h1>
       </div>
       <div className="flex flex-row flex-grow">
         {isSidebarVisible && (
-          <div className="fixed inset-0 z-50 sm:static sm:inset-auto">
-            <ProjectSidebar
-              projects={projects}
-              onSelectProject={handleSelectProject}
-              onAddProject={handleAddProject}
-              onDeleteProject={handleDeleteProject}
-            />
-          </div>
+          <ProjectSidebar
+            projects={projects}
+            onSelectProject={handleSelectProject}
+            onAddProject={handleAddProject}
+            onDeleteProject={handleDeleteProject}
+            onCloseSidebar={() => setIsSidebarVisible(false)}
+          />
         )}
         <div className="flex-grow p-4 bg-gray-100 overflow-auto">
           {selectedProject && (
@@ -88,7 +90,9 @@ const MainLayout: React.FC = () => {
               />
               <Tree
                 eventTreeElements={selectedProject.eventTreeElements}
-                onUpdateTreeEvents={(newTreeEvents: any) => handleUpdateProjectTreeEvents(selectedProject.id, newTreeEvents)}
+                onUpdateTreeEvents={(newTreeEvents: any) =>
+                  handleUpdateProjectTreeEvents(selectedProject.id, newTreeEvents)
+                }
               />
             </>
           )}
@@ -99,33 +103,6 @@ const MainLayout: React.FC = () => {
 };
 
 export default MainLayout;
-
-
-
-// import React from 'react';
-// import ProjectSidebar from '../ui/ProjectSidebar';
-// import Header from '../ui/Header';
-
-// interface MainLayoutProps {
-//   children: React.ReactNode;
-// }
-
-// const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-//   return (
-//     <div className="flex flex-col h-screen">
-//       <Header title="Диаграмма анализа рисков API(ChatGPT)" onLogout={() => console.log("logout")} />
-//       <div className="flex flex-row flex-grow">
-//         <ProjectSidebar />
-//         <div className="flex-grow p-4 bg-gray-100">
-//           {children}
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default MainLayout;
-
 
 
 
